@@ -28,6 +28,25 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 PRIZEPICKS_BASE = "https://api.prizepicks.com"
 ODDS_API_BASE = "https://api.the-odds-api.com/v4"
 
+
+def load_dotenv(path: str = ".env") -> None:
+    """Minimal .env loader so ODDS_API_KEY works without extra dependencies."""
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for raw in f:
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+    except OSError:
+        return
+
 NBA_STAT_TO_MARKET = {
     "Points": "player_points",
     "Rebounds": "player_rebounds",
@@ -515,9 +534,9 @@ def run_model(
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="PrizePicks EV model (NBA)")
-    p.add_argument("--league-id", type=int, default=7)
-    p.add_argument("--state-code", default="FL")
-    p.add_argument("--sport-key", default="basketball_nba")
+    p.add_argument("--league-id", type=int, default=int(os.getenv("LEAGUE_ID", "7")))
+    p.add_argument("--state-code", default=os.getenv("STATE_CODE", "FL"))
+    p.add_argument("--sport-key", default=os.getenv("SPORT_KEY", "basketball_nba"))
     p.add_argument("--api-key", default=os.getenv("ODDS_API_KEY", ""))
     p.add_argument("--in-game", action="store_true", default=True)
     p.add_argument("--not-in-game", action="store_false", dest="in_game")
@@ -530,6 +549,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    load_dotenv()
     args = parse_args()
     if not args.api_key:
         print("Missing Odds API key. Set --api-key or ODDS_API_KEY env var.", file=sys.stderr)

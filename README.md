@@ -16,19 +16,31 @@ Both combine:
 python3 -m pip install streamlit pandas
 ```
 
-## 2) Set your Odds API key
+## 2) Create your environment file (important)
 
 ```bash
-export ODDS_API_KEY="<your_the_odds_api_key>"
+cp .env.example .env
 ```
+
+Then edit `.env` and set your key:
+
+```dotenv
+ODDS_API_KEY=your_real_key_here
+LEAGUE_ID=7
+STATE_CODE=FL
+SPORT_KEY=basketball_nba
+```
+
+> The app now auto-loads `.env`, so you do **not** need to export manually every time.
 
 ## 3) Run the CLI model
 
 ```bash
-python3 prizepicks_ev_model.py --league-id 7 --state-code FL --sport-key basketball_nba --top 25 --json-out ev.json
+python3 prizepicks_ev_model.py --top 25 --json-out ev.json
 ```
 
 This prints top EV rows in your terminal and writes full output to `ev.json`.
+You can still override values with flags like `--league-id`, `--state-code`, `--sport-key`, or `--api-key`.
 
 ## 4) Open the dashboard
 
@@ -46,7 +58,7 @@ http://localhost:8501
 
 ## Dashboard quick use
 
-1. Enter your Odds API key in the sidebar (or rely on `ODDS_API_KEY`).
+1. Confirm your key is loaded (or paste it in sidebar).
 2. Pick league/state/sport settings.
 3. Click **Run EV Model**.
 4. View:

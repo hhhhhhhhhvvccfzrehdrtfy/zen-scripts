@@ -8,8 +8,9 @@ import os
 import pandas as pd
 import streamlit as st
 
-from prizepicks_ev_model import calculate_slip_scenarios, run_model
+from prizepicks_ev_model import calculate_slip_scenarios, load_dotenv, run_model
 
+load_dotenv()
 st.set_page_config(page_title="PrizePicks EV Command Center", page_icon="🚀", layout="wide")
 
 st.markdown(
@@ -46,9 +47,9 @@ st.caption("Institutional-style EV board with bookmaker consensus, confidence sc
 with st.sidebar:
     st.header("⚙️ Model Controls")
     api_key = st.text_input("The Odds API Key", value=os.getenv("ODDS_API_KEY", ""), type="password")
-    league_id = st.number_input("League ID", value=7, step=1)
-    state_code = st.text_input("State Code", value="FL")
-    sport_key = st.text_input("Sport Key", value="basketball_nba")
+    league_id = st.number_input("League ID", value=int(os.getenv("LEAGUE_ID", "7")), step=1)
+    state_code = st.text_input("State Code", value=os.getenv("STATE_CODE", "FL"))
+    sport_key = st.text_input("Sport Key", value=os.getenv("SPORT_KEY", "basketball_nba"))
     in_game = st.checkbox("In-game only", value=True)
     payout_multiplier = st.number_input("Payout Multiplier", min_value=0.1, value=1.0, step=0.1)
     fallback_sigma = st.number_input("Fallback Sigma", min_value=0.5, value=5.5, step=0.1)
