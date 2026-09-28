@@ -1,0 +1,111 @@
+<title>The Unmaker War</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Instrument+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+  /* Layout: one centered column — film first, controls under it, chapter index below. Graphite and bone; the film carries the color. */
+  :root {
+    --bg: #0b0b0d;
+    --panel: #141418;
+    --line: #2a2a31;
+    --fg: #ece6da;
+    --muted: #97928a;
+    --accent: #e3d2ad;
+    --display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+    --body: "Instrument Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    color-scheme: dark;
+  }
+  html, body { background: var(--bg); color: var(--fg); }
+  body { margin: 0; font-family: var(--body); font-size: 15px; line-height: 1.5; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding-inline: max(16px, 3vw); padding-block: 24px 64px; }
+  .head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px; margin-bottom: 14px; }
+  .eyebrow { margin: 0; font-size: 12px; letter-spacing: 0.32em; text-transform: uppercase; color: var(--muted); }
+  h1 { margin: 2px 0 0; font-family: var(--display); font-weight: 600; font-size: clamp(38px, 6vw, 72px); line-height: 1; letter-spacing: 0.01em; text-wrap: balance; }
+  .now { margin: 0; font-family: var(--display); font-style: italic; font-size: 20px; color: var(--accent); min-width: 0; }
+  .stage { max-width: max(320px, calc((100vh - 250px) * 16 / 9)); margin-inline: auto; }
+  .screen { position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 3px; overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55); }
+  .screen canvas { display: block; width: 100%; height: 100%; cursor: pointer; }
+  .screen:fullscreen { border-radius: 0; display: flex; align-items: center; justify-content: center; background: #000; }
+  .screen:fullscreen canvas { width: min(100vw, 177.78vh); height: min(56.25vw, 100vh); }
+  .bigplay { position: absolute; left: 50%; top: 76%; transform: translate(-50%, -50%); font: 600 clamp(16px, 2.2vw, 22px) var(--body); letter-spacing: 0.2em; text-transform: uppercase; color: #0b0b0d; background: var(--accent); border: 0; border-radius: 2px; padding: 0.9em 1.6em; cursor: pointer; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); }
+  .bigplay:hover { background: #f3e6c8; }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding-block: 12px 4px; }
+  .controls button, .controls select { font: 500 13px var(--body); color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 2px; padding: 8px 12px; cursor: pointer; }
+  .controls button:hover, .controls select:hover { border-color: #4a4a54; }
+  .controls button[aria-pressed="false"] { color: var(--muted); }
+  #play { min-width: 76px; background: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 700; }
+  .time { font: 400 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; min-width: 96px; }
+  .scrub { position: relative; flex: 1 1 260px; min-width: 0; height: 28px; display: flex; align-items: center; }
+  .scrub input { width: 100%; margin: 0; appearance: none; -webkit-appearance: none; background: transparent; height: 28px; cursor: pointer; position: relative; z-index: 1; }
+  .scrub input::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--accent) var(--p, 0%), #33333b var(--p, 0%)); }
+  .scrub input::-moz-range-track { height: 4px; border-radius: 2px; background: #33333b; }
+  .scrub input::-moz-range-progress { height: 4px; background: var(--accent); }
+  .scrub input::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%; background: var(--fg); border: 0; }
+  .scrub input::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--fg); border: 0; }
+  .ticks { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+  .tick { position: absolute; top: 9px; width: 2px; height: 10px; background: var(--bg); transform: translateX(-1px); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .keys { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+  .keys kbd { font: 400 11px var(--mono); border: 1px solid var(--line); border-radius: 2px; padding: 1px 5px; color: var(--fg); }
+  .chapters { margin-top: 36px; }
+  .chapters h2 { font-family: var(--display); font-weight: 600; font-size: 30px; margin: 0 0 12px; }
+  .chapters ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 8px; }
+  .chap { width: 100%; height: 100%; text-align: left; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 12px 14px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; grid-template-areas: "cn cd" "ct ct" "cs cs"; gap: 2px 12px; align-items: baseline; font: inherit; }
+  .chap:hover { border-color: #4a4a54; }
+  .chap.on { border-color: var(--accent); }
+  .chap .cn { grid-area: cn; font: 600 11px var(--body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+  .chap .ct { grid-area: ct; font-family: var(--display); font-size: 22px; font-weight: 600; line-height: 1.15; min-width: 0; text-wrap: balance; }
+  .chap .cd { grid-area: cd; font: 400 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .chap .cs { grid-area: cs; font-size: 13px; color: var(--muted); min-width: 0; }
+  .notes { margin-top: 36px; max-width: 68ch; color: var(--muted); font-size: 14px; }
+  .notes p { margin: 0 0 8px; }
+  @media (max-width: 560px) {
+    .controls { gap: 8px; }
+    .time { min-width: 0; }
+    .keys { display: none; }
+  }
+</style>
+<main class="wrap">
+  <header class="head">
+    <div>
+      <p class="eyebrow">The Boundless Nexus</p>
+      <h1>The Unmaker War</h1>
+    </div>
+    <p class="now" id="chapnow" aria-live="polite"></p>
+  </header>
+  <section class="stage" aria-label="Film">
+    <div class="screen" id="screen">
+      <canvas id="film" aria-label="The Unmaker War animation"></canvas>
+      <button type="button" class="bigplay" id="bigplay">Play the film</button>
+    </div>
+    <div class="controls">
+      <button type="button" id="play" aria-label="Play">Play</button>
+      <span class="time" id="time">0:00 / 0:00</span>
+      <div class="scrub">
+        <input type="range" id="seek" min="0" max="1000" step="1" value="0" aria-label="Seek">
+        <div class="ticks" id="ticks"></div>
+      </div>
+      <button type="button" id="cc" aria-pressed="true">Captions on</button>
+      <button type="button" id="snd" aria-pressed="true">Sound on</button>
+      <select id="speed" aria-label="Playback speed">
+        <option value="0.5">0.5×</option>
+        <option value="0.75">0.75×</option>
+        <option value="1" selected>1×</option>
+        <option value="1.25">1.25×</option>
+        <option value="1.5">1.5×</option>
+      </select>
+      <button type="button" id="fs">Fullscreen</button>
+    </div>
+    <p class="keys"><kbd>Space</kbd> play or pause · <kbd>←</kbd> <kbd>→</kbd> 5 seconds · <kbd>[</kbd> <kbd>]</kbd> chapters · <kbd>C</kbd> captions · <kbd>M</kbd> sound · <kbd>F</kbd> fullscreen</p>
+  </section>
+  <section class="chapters" aria-label="Chapters">
+    <h2>Chapters</h2>
+    <ol id="chapters"></ol>
+  </section>
+  <section class="notes">
+    <p>Every frame is drawn live in your browser. Characters follow the Unmaker War design reference, and damage carries forward from scene to scene.</p>
+    <p>The story is cut from the canon Unmaker events in The Boundless Nexus. Sound is generated on the fly.</p>
+  </section>
+</main>
+<!--SCRIPTS-->
