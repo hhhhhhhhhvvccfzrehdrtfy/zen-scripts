@@ -1,0 +1,30 @@
+import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import path from 'node:path';
+const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const out = process.argv[2];
+const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--allow-file-access-from-files', '--autoplay-policy=no-user-gesture-required'] });
+for (const [name, vp] of [['desk', { width: 1440, height: 900 }], ['phone', { width: 390, height: 844 }]]) {
+  const page = await browser.newPage({ viewport: vp, deviceScaleFactor: 1 });
+  const errors = [];
+  page.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
+  page.on('console', m => { if (m.type() === 'error' && !/ERR_CERT|net::|fonts/.test(m.text())) errors.push(m.text()); });
+  await page.goto('file://' + path.join(root, 'dist', 'the-unmaker-war.html'), { waitUntil: 'commit' });
+  await page.waitForSelector('#bigplay');
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: `${out}/${name}_0.png`, fullPage: name === 'phone' });
+  await page.click('#bigplay');
+  await page.waitForTimeout(3000);
+  const s1 = await page.evaluate(() => ({ T: UW.player.T, playing: UW.player.playing, q: UW.R.quality, lite: !!UW.LITE, audio: !!(UW.A && UW.A.ok), time: document.getElementById('time').textContent, now: document.getElementById('chapnow').textContent, scrollW: document.documentElement.scrollWidth, innerW: innerWidth }));
+  await page.screenshot({ path: `${out}/${name}_1.png` });
+  const chaps = await page.$$('.chap');
+  await chaps[7].click();
+  await page.waitForTimeout(2000);
+  const s2 = await page.evaluate(() => ({ T: UW.player.T, now: document.getElementById('chapnow').textContent }));
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(300);
+  const s3 = await page.evaluate(() => ({ playing: UW.player.playing }));
+  await page.screenshot({ path: `${out}/${name}_2.png`, fullPage: name === 'phone' });
+  console.log(name, JSON.stringify(s1), JSON.stringify(s2), JSON.stringify(s3), errors.length ? errors.join(' | ') : 'no errors');
+  await page.close();
+}
+await browser.close();

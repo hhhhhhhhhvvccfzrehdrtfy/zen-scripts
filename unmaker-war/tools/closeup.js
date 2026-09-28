@@ -1,0 +1,30 @@
+(function(){
+  const c = document.getElementById('c');
+  UW.R.fixedWidth = 1920;
+  UW.R.init(c);
+  const params = new URLSearchParams(location.search);
+  const t = parseFloat(params.get('t') || '0.5');
+  UW.R.begin(params.get('bg') || '#6d7486');
+  const list = (params.get('who') || 'chase,maeve,malevolor,jack').split(',');
+  const pose = params.get('pose') || 'idle';
+  const dmg = params.get('dmg') ? JSON.parse(params.get('dmg')) : null;
+  const zk = parseFloat(params.get('z') || '4');
+  const n = list.length;
+  list.forEach((who, i) => {
+    const spec = UW.C[who];
+    const ctx = UW.R.ctx;
+    const cellW = 1920 / n;
+    ctx.save();
+    ctx.setTransform(UW.R.s,0,0,UW.R.s,0,0);
+    ctx.beginPath(); ctx.rect(i*cellW, 0, cellW, 1080); ctx.clip();
+    const Hh = spec.ft*UW.FT;
+    const J = UW.RIG.solve(spec, UW.RIG.get(pose), Hh);
+    const z = zk * 277 / Hh;
+    const fy = +(params.get('fy') || 0.0);
+    ctx.translate(i*cellW + cellW/2, 420);
+    ctx.scale(z, z);
+    ctx.translate(-J.head[0]*(+(params.get('face')||1)), -J.head[1] - fy*Hh);
+    UW.RIG.draw(ctx, spec, { x: 0, y: 0, face: +(params.get('face')||1), pose, t, dmg, expr: params.get('expr')||undefined, eyeGlow: +(params.get('eg')||0), talk: +(params.get('talk')||0) });
+    ctx.restore();
+  });
+})();
