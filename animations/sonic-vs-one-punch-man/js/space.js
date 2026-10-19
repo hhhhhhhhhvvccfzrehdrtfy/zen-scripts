@@ -697,7 +697,7 @@ function saturn(ctx, cx, cy, R, t) {
 // o.lane: [x0, x1, k] a channel ploughed along the ring; o.gone: [x0, x1] a section lifted away.
 function ringPlane(ctx, c, t, o = {}) {
   starfield(ctx, c, t, { neb: 0.6, nx: -200 });
-  layer(ctx, c, 0.06, (g) => saturn(g, o.sx ?? -120, o.sy ?? -140, 330, t));
+  layer(ctx, c, 0.06, (g) => saturn(g, o.sx ?? -120, o.sy ?? -140, o.R ?? 210, t));
   layer(ctx, c, 0.35, (g, z) => {
     const midX = (c.x - 640) * 0.35;
     const half = W / z / 2 + 300;
@@ -715,7 +715,7 @@ function ringPlane(ctx, c, t, o = {}) {
   camApply(ctx, c);
   const x0 = c.x - 2600;
   const x1 = c.x + 2600;
-  const stripes = [[0, '#f0e1bd'], [26, '#d9c093'], [50, '#efdcb2'], [86, '#c9ab78'], [120, '#e6d1a5'], [170, '#bfa071'], [230, '#dcc59b']];
+  const stripes = [[0, '#f6ead0'], [14, '#e3cfa6'], [30, '#f2e4c4'], [44, '#b89a6c'], [50, '#e9d6ae'], [78, '#cdb284'], [104, '#7d6a52'], [110, '#e2cfa8'], [150, '#c4a77a'], [200, '#5c4c3c'], [206, '#d8c39a'], [260, '#b39770']];
   const gone = o.gone;
   const drawRoad = () => {
     for (let i = 0; i < stripes.length; i++) {
@@ -733,6 +733,16 @@ function ringPlane(ctx, c, t, o = {}) {
     ctx.clip();
   }
   drawRoad();
+  // the ring is made of ice: a glinting sheen and drifting specks
+  const sh = ctx.createLinearGradient(0, RING_Y, 0, RING_Y + 120);
+  sh.addColorStop(0, 'rgba(255,255,255,0.45)');
+  sh.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = sh;
+  ctx.fillRect(x0, RING_Y, x1 - x0, 120);
+  for (let k = Math.floor(x0 / 37); k < x1 / 37; k++) {
+    const tw = 0.5 + 0.5 * Math.sin(t * 3 + k);
+    circle(ctx, k * 37 + hash(k) * 30, RING_Y + 8 + hash(k * 3.1) * 250, 1.5 + tw * 1.5, `rgba(255,255,255,${0.35 + 0.4 * tw})`);
+  }
   ctx.beginPath();
   ctx.moveTo(x0, RING_Y);
   ctx.lineTo(x1, RING_Y);
@@ -889,4 +899,257 @@ function spaceDebris(ctx, x, y, since, o = {}) {
     } else poly(ctx, [[-r, -r * 0.6], [r * 0.4, -r], [r, r * 0.2], [-r * 0.2, r * 0.8]], o.col || '#8a7c70', 2.2);
     ctx.restore();
   }
+}
+
+/* ---------- the comet ---------- */
+
+// Height of the comet's surface at x: a long lumpy back to stand on.
+function cometY(x) {
+  return 560 + 26 * Math.sin(x * 0.0055) + 12 * Math.sin(x * 0.017 + 1);
+}
+
+// Riding a comet toward the Sun: tails stream back to the left, the Sun blazes ahead.
+// o.geysers: [x, t0] gas jets; o.craters: [x, w]; o.glow 0..1 hot cracks; o.split 0..1 breaking apart.
+function cometBG(ctx, c, t, o = {}) {
+  starfield(ctx, c, t, { neb: 0.6, bg: '#08061a' });
+  layer(ctx, c, 0.05, (g) => {
+    g.globalCompositeOperation = 'lighter';
+    const gl = g.createRadialGradient(700, -40, 10, 700, -40, 420);
+    gl.addColorStop(0, 'rgba(255,250,225,1)');
+    gl.addColorStop(0.1, 'rgba(255,220,140,0.55)');
+    gl.addColorStop(0.45, 'rgba(255,170,80,0.12)');
+    gl.addColorStop(1, 'rgba(255,150,60,0)');
+    g.fillStyle = gl;
+    g.fillRect(280, -460, 840, 840);
+  });
+  starStreaks(ctx, t, 0, 0.55, { speed: 2200, n: 50 });
+  ctx.save();
+  camApply(ctx, c);
+  // tails: soft streaming bands, a straight blue ion tail and a broad curling dust tail
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 18; i++) {
+    const y0 = 450 + (hash(i * 3.1) - 0.5) * 120;
+    const len = 1800 + hash(i * 5.3) * 1600;
+    const sway = Math.sin(t * 1.5 + i) * 30;
+    const g = ctx.createLinearGradient(300, 0, 300 - len, 0);
+    const blue = i % 3 === 0;
+    g.addColorStop(0, blue ? 'rgba(120,200,255,0.16)' : 'rgba(255,245,225,0.09)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.strokeStyle = g;
+    ctx.lineWidth = blue ? 10 + hash(i) * 14 : 30 + hash(i) * 60;
+    ctx.beginPath();
+    ctx.moveTo(280, y0 + 60);
+    if (blue) ctx.lineTo(300 - len, y0 - 140 + sway);
+    else ctx.quadraticCurveTo(-600, y0 - 40 + (hash(i * 7) - 0.3) * 260, 300 - len, y0 + (hash(i * 9) - 0.2) * 700 + sway);
+    ctx.stroke();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  const split = o.split || 0;
+  const pieces = split > 0 ? [[150, 900, -1], [900, 1650, 0], [1650, 2450, 1]] : [[150, 2450, 0]];
+  for (const [xa, xb, side] of pieces) {
+    ctx.save();
+    ctx.translate(side * split * 220, (side === 0 ? 1 : -0.4) * split * 160);
+    ctx.rotate(side * split * 0.2);
+    ctx.beginPath();
+    ctx.moveTo(xa, cometY(xa) + 40);
+    for (let x = xa; x <= xb; x += 30) ctx.lineTo(x, cometY(x));
+    ctx.lineTo(xb, cometY(xb) + 60);
+    for (let x = xb; x >= xa; x -= 60) ctx.lineTo(x, 900 + Math.sin(x * 0.01) * 80 + (x < 400 ? (400 - x) * 0.4 : 0));
+    ctx.closePath();
+    const gr = ctx.createLinearGradient(0, 520, 0, 900);
+    gr.addColorStop(0, '#d9e6f2');
+    gr.addColorStop(0.15, '#8fa3b8');
+    gr.addColorStop(1, '#3c4656');
+    ctx.fillStyle = gr;
+    ctx.fill();
+    strokeNow(ctx, 4, INK);
+    ctx.save();
+    ctx.clip();
+    for (let k = Math.floor(xa / 170); k < xb / 170; k++) {
+      const x = k * 170 + hash(k) * 90;
+      const y = cometY(x) + 40 + hash(k * 3) * 160;
+      ell(ctx, x, y, 30 + hash(k * 5) * 40, 10 + hash(k * 7) * 8, 0, 'rgba(40,50,70,0.35)', 0);
+    }
+    for (const [cx0, w] of o.craters || []) {
+      ell(ctx, cx0, cometY(cx0) + 6, w, w * 0.25, 0, '#4a5568', 3);
+    }
+    if (o.glow > 0) {
+      ctx.strokeStyle = `rgba(255,170,80,${o.glow})`;
+      ctx.lineWidth = 5;
+      for (let i = 0; i < 9; i++) {
+        let x = xa + hash(i * 3.7) * (xb - xa);
+        let y = cometY(x) + 4;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        for (let j = 0; j < 5; j++) {
+          x += (hash(i * 9 + j) - 0.5) * 80;
+          y += 30 + hash(i * 5 + j) * 40;
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+    ctx.restore();
+  }
+  // gas jets venting from the surface
+  for (const [gx, t0] of o.geysers || []) {
+    const k = t - t0;
+    if (k < 0 || k > 2.2) continue;
+    const gy = cometY(gx);
+    const hgt = 260 * E.out3(Math.min(1, k * 2)) * (1 - prog(k, 1.4, 2.2));
+    const g = ctx.createLinearGradient(0, gy, 0, gy - hgt);
+    g.addColorStop(0, 'rgba(230,245,255,0.95)');
+    g.addColorStop(1, 'rgba(230,245,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(gx - 12, gy);
+    ctx.lineTo(gx - 50 - Math.sin(t * 20) * 6, gy - hgt);
+    ctx.lineTo(gx + 50 + Math.sin(t * 17) * 6, gy - hgt);
+    ctx.lineTo(gx + 12, gy);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* ---------- Mars ---------- */
+
+const MARS_G = 600;
+
+// A lumpy little moon: Phobos.
+function phobos(ctx, x, y, r, rot = 0, glow = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  if (glow > 0) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(0, 0, r * 0.6, 0, 0, r * 1.8);
+    g.addColorStop(0, `rgba(120,240,255,${0.5 * glow})`);
+    g.addColorStop(1, 'rgba(120,240,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.8, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.scale(1.35, 1);
+  lumpPath(ctx, r, 17, 12, 0.25);
+  const gr = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
+  gr.addColorStop(0, '#b0907a');
+  gr.addColorStop(1, '#5e4636');
+  ctx.fillStyle = gr;
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+  ell(ctx, r * 0.3, -r * 0.1, r * 0.32, r * 0.26, 0, 'rgba(50,34,26,0.5)', 0);
+  ell(ctx, -r * 0.45, r * 0.35, r * 0.18, r * 0.14, 0, 'rgba(50,34,26,0.45)', 0);
+  ctx.restore();
+  lumpPath(ctx, r, 17, 12, 0.25);
+  ctx.restore();
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.scale(1.35, 1);
+  lumpPath(ctx, r, 17, 12, 0.25);
+  ctx.restore();
+  strokeNow(ctx, Math.max(2, r * 0.06), INK);
+}
+
+// Standing on Mars: a butterscotch sky, Olympus Mons on the horizon, red dunes to MARS_G.
+// o.storm 0..1 fills the air with blowing dust; o.phobos [x, y] places the moon in the sky (or null).
+function marsSurface(ctx, c, t, o = {}) {
+  const sk = ctx.createLinearGradient(0, 0, 0, H);
+  sk.addColorStop(0, '#5a3a3a');
+  sk.addColorStop(0.5, '#c27e5a');
+  sk.addColorStop(1, '#e7b58a');
+  ctx.fillStyle = sk;
+  ctx.fillRect(-50, -50, W + 100, H + 100);
+  layer(ctx, c, 0.03, (g) => {
+    circle(g, 420, -240, 26, 'rgba(255,248,230,0.95)');
+    if (o.phobos) phobos(g, o.phobos[0], o.phobos[1], 22, t * 0.1);
+  });
+  layer(ctx, c, 0.15, (g) => {
+    // Olympus Mons: a shield volcano so wide it runs off the frame
+    g.beginPath();
+    g.moveTo(-2200, 190);
+    g.quadraticCurveTo(-700, 110, -260, 70);
+    g.lineTo(140, 66);
+    g.quadraticCurveTo(700, 110, 2200, 190);
+    g.lineTo(2200, 900);
+    g.lineTo(-2200, 900);
+    g.closePath();
+    g.fillStyle = '#a25a40';
+    g.fill();
+    strokeNow(g, 3, 'rgba(60,24,16,0.6)');
+    ell(g, -60, 70, 120, 10, 0, '#7a3e2c', 0);
+  });
+  layer(ctx, c, 0.45, (g, z) => {
+    const midX = (c.x - 640) * 0.45;
+    const half = W / z / 2 + 400;
+    g.beginPath();
+    g.moveTo(midX - half, 900);
+    for (let x = midX - half; x <= midX + half; x += 50) g.lineTo(x, 210 - Math.abs(noise(x * 0.004 + 5)) * 70);
+    g.lineTo(midX + half, 900);
+    g.closePath();
+    g.fillStyle = '#b8664a';
+    g.fill();
+    strokeNow(g, 3, INK);
+  });
+  ctx.save();
+  camApply(ctx, c);
+  const x0 = c.x - 2600;
+  const x1 = c.x + 2600;
+  const g = ctx.createLinearGradient(0, MARS_G, 0, MARS_G + 500);
+  g.addColorStop(0, '#d0784e');
+  g.addColorStop(1, '#8e4630');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(x0, MARS_G);
+  for (let x = x0; x <= x1; x += 60) ctx.lineTo(x, MARS_G + Math.sin(x * 0.004) * 6);
+  ctx.lineTo(x1, MARS_G + 2400);
+  ctx.lineTo(x0, MARS_G + 2400);
+  ctx.closePath();
+  ctx.fill();
+  strokeNow(ctx, 4, INK);
+  for (let k = Math.floor(x0 / 260); k < x1 / 260; k++) {
+    const x = k * 260 + hash(k) * 140;
+    if (hash(k * 3) < 0.45) poly(ctx, [[x, MARS_G + 4], [x + 14, MARS_G - 18 - hash(k) * 16], [x + 40, MARS_G - 10], [x + 52, MARS_G + 4]], '#7c3a28', 2.5);
+    ctx.beginPath();
+    ctx.moveTo(x - 40, MARS_G + 40 + hash(k * 5) * 60);
+    ctx.quadraticCurveTo(x, MARS_G + 30 + hash(k * 5) * 60, x + 60, MARS_G + 44 + hash(k * 5) * 60);
+    strokeNow(ctx, 2.5, 'rgba(120,50,30,0.5)');
+  }
+  for (const [cx0, w] of o.craters || []) {
+    ell(ctx, cx0, MARS_G + 10, w, w * 0.22, 0, '#7a3a26', 3);
+    ctx.beginPath();
+    ctx.ellipse(cx0, MARS_G + 10, w, w * 0.22, 0, 0.15, Math.PI - 0.15);
+    strokeNow(ctx, 3, '#e6a07a');
+  }
+  ctx.restore();
+}
+
+// Blowing dust over everything; drawn last.
+function dustStorm(ctx, t, k) {
+  if (k <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = 0.72 * k;
+  ctx.fillStyle = '#b8603e';
+  ctx.fillRect(-50, -50, W + 100, H + 100);
+  ctx.globalAlpha = k;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 70; i++) {
+    const y = hash(i * 3.3) * H;
+    const sp = 900 + hash(i * 7.7) * 1400;
+    const x = W + 200 - ((hash(i) * 3000 + t * sp) % (W + 400));
+    ctx.strokeStyle = i % 3 ? 'rgba(240,170,120,0.55)' : 'rgba(120,50,30,0.5)';
+    ctx.lineWidth = 2 + hash(i * 5) * 6;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 60 + hash(i * 9) * 160, y - 10);
+    ctx.stroke();
+  }
+  ctx.restore();
 }

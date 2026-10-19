@@ -15,7 +15,7 @@ const SS = 0.8; // Shadic's scale
 const H_BASE = { ...HOG_BASE, ground: 0, s: SS, dir: 1 };
 const Z_BASE = { ...SAI_BASE, ground: 0, s: 1, dir: 1 };
 
-TRACK_NUM.push('still', 'sq', 'rip', 'hyper', 'quillWob', 'capeRot');
+TRACK_NUM.push('still', 'sq', 'rip', 'hyper', 'quillWob', 'capeRot', 'ph');
 
 /* ---------- curved key paths ---------- */
 
