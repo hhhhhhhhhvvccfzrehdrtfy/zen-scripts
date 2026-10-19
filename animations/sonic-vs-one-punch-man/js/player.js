@@ -16,7 +16,11 @@
   for (const s of SCENES) {
     for (const [t, name, arg] of s.cues) CUES.push({ t: s.start + t, name, arg });
     for (const L of s.lines) CUES.push({ t: s.start + L[0], name: 'pop' });
-    for (const [t, mood] of s.music) MUSIC.push({ start: s.start + t, mood, key: MUSIC.length });
+    for (const [t, mood] of s.music) {
+      // a mood that carries over a chapter cut keeps playing instead of restarting its bar
+      if (MUSIC.length && MUSIC[MUSIC.length - 1].mood === mood) continue;
+      MUSIC.push({ start: s.start + t, mood, key: MUSIC.length });
+    }
   }
   CUES.sort((a, b) => a.t - b.t);
 
@@ -231,6 +235,7 @@
   function boot(data) {
     buildWorld();
     if (typeof buildWorld2 === 'function') buildWorld2();
+    if (typeof buildWorld3 === 'function') buildWorld3();
     resize();
     if (data && data.t > 0) seek(data.t);
     $('dur').textContent = fmt(TOTAL);

@@ -186,6 +186,46 @@ const Sound = (() => {
       tone(55, t, 2.6, { f1: 220, type: 'sawtooth', vol: 0.16, lp: 900, sustain: 0.8 });
       hiss(t, 2.6, { type: 'lowpass', f0: 300, f1: 1800, vol: 0.22, attack: 1.2 });
     },
+    fuse: (t) => {
+      [261.6, 329.6, 392, 523.3, 659.3].forEach((f, i) => tone(f, t + i * 0.12, 2.2 - i * 0.12, { type: 'triangle', vol: 0.09, attack: 0.3, sustain: 0.6 }));
+      hiss(t, 2.4, { f0: 300, f1: 7000, q: 0.9, vol: 0.22, attack: 1.6 });
+    },
+    tele: (t) => {
+      tone(2400, t, 0.18, { f1: 600, type: 'sine', vol: 0.14 });
+      hiss(t, 0.16, { f0: 5000, f1: 1500, q: 2, vol: 0.18 });
+    },
+    blast: (t) => {
+      tone(90, t, 1.2, { f1: 30, vol: 0.7 });
+      hiss(t, 1.4, { f0: 1800, f1: 300, q: 0.6, vol: 0.5, attack: 0.01 });
+    },
+    crunch: (t) => {
+      hiss(t, 0.3, { type: 'highpass', f0: 1800, vol: 0.4 });
+      tone(320, t, 0.2, { f1: 80, type: 'square', vol: 0.12, lp: 1800 });
+    },
+    block: (t) => {
+      tone(180, t, 0.16, { f1: 70, vol: 0.55 });
+      hiss(t, 0.06, { type: 'highpass', f0: 3500, vol: 0.32 });
+    },
+    swing: (t) => hiss(t, 0.22, { f0: 700, f1: 2400, q: 1.6, vol: 0.28, attack: 0.04 }),
+    crack: (t) => {
+      hiss(t, 0.5, { type: 'lowpass', f0: 2600, f1: 200, vol: 0.55, attack: 0.005 });
+      tone(60, t, 0.9, { f1: 30, vol: 0.5 });
+    },
+    bigsneeze: (t) => {
+      hiss(t, 1.4, { f0: 2600, f1: 200, q: 0.5, vol: 0.9, attack: 0.02 });
+      tone(160, t, 0.9, { f1: 40, vol: 0.8, type: 'triangle' });
+      tone(55, t + 0.05, 2.5, { f1: 22, vol: 0.8 });
+    },
+    zap: (t) => {
+      tone(1200, t, 0.25, { f1: 90, type: 'sawtooth', vol: 0.12, lp: 4000 });
+      hiss(t, 0.3, { type: 'highpass', f0: 2000, vol: 0.3 });
+    },
+    ice: (t) => [0, 0.05, 0.11].forEach((d, i) => tone(1800 + i * 500, t + d, 0.15, { vol: 0.06, type: 'triangle' })),
+    serious: (t) => {
+      tone(55, t, 3, { vol: 0.6 });
+      [110, 164.8, 220].forEach((f) => tone(f, t, 2.6, { type: 'sawtooth', vol: 0.09, lp: 1200, sustain: 0.6 }));
+      hiss(t, 0.4, { type: 'lowpass', f0: 1200, f1: 100, vol: 0.4 });
+    },
   };
 
   function play(name, arg) {
@@ -289,6 +329,58 @@ const Sound = (() => {
         const m = riff[i % 16];
         if (m !== null) lead(r + 24 + m, t, sd * 1.3, 0.05, 'sawtooth');
         if (i % 32 === 0) pad([r + 12, r + 15, r + 19], t, sd * 32, 0.03);
+      },
+    },
+    space: {
+      bpm: 76,
+      step(i, t, sd) {
+        const bar = Math.floor(i / 16) % 4;
+        const roots = [50, 46, 43, 45];
+        const r = roots[bar];
+        if (i % 16 === 0) pad([r, r + 7, r + 12, r + 16 - (bar === 3 ? 0 : 1)], t, sd * 16, 0.035);
+        if (i % 2 === 0) {
+          const arp = [0, 7, 12, 14, 19, 14, 12, 7][(i / 2) % 8];
+          tone(NOTE(r + 24 + arp), t, sd * 3, { type: 'triangle', vol: 0.035, bus: musBus });
+        }
+        if (i % 32 === 24) tone(NOTE(r + 36), t, 1.4, { vol: 0.03, bus: musBus });
+      },
+    },
+    hyper: {
+      bpm: 176,
+      step(i, t, sd) {
+        const bar = Math.floor(i / 16) % 4;
+        const roots = [50, 46, 48, 45];
+        const r = roots[bar];
+        if (i % 2 === 0) bass(r - 12 + (i % 8 === 6 ? 12 : 0), t, sd * 1.6, 0.3, 'sawtooth');
+        if (i % 4 === 0) kick(t, 0.6);
+        if (i % 8 === 4) snare(t, 0.34);
+        if (i % 16 === 14) snare(t, 0.16);
+        hat(t, i % 2 ? 0.05 : 0.08);
+        const stab = [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0][i % 16];
+        if (stab) [0, 7, 12].forEach((d) => lead(r + 12 + d, t, sd * 0.7, 0.028, 'sawtooth'));
+        const mel = bar % 2 === 0
+          ? [12, null, 15, 12, 17, null, 15, null, 19, null, 17, 15, 14, null, 12, null]
+          : [19, null, 17, null, 15, 17, 19, null, 22, null, 21, null, 19, null, 17, null];
+        const m = mel[i % 16];
+        if (m !== null) lead(r + 12 + m, t, sd * 1.5, 0.06, 'square');
+      },
+    },
+    serious: {
+      bpm: 140,
+      step(i, t, sd) {
+        const bar = Math.floor(i / 16) % 4;
+        const roots = [45, 41, 43, 40];
+        const r = roots[bar];
+        const kp = [1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0][i % 16];
+        if (kp) kick(t, 0.75);
+        if (i % 8 === 4) snare(t, 0.42);
+        if (i % 2 === 0) hat(t, 0.05);
+        if (i % 4 === 0) bass(r - 12, t, sd * 3.6, 0.38, 'sawtooth');
+        if (i % 16 === 0) pad([r, r + 7, r + 12], t, sd * 15, 0.06);
+        const mel = [12, null, null, null, 15, null, 14, null, 12, null, null, 10, 12, null, null, null];
+        const m = mel[i % 16];
+        if (m !== null && bar !== 3) lead(r + 12 + m, t, sd * 3, 0.06, 'sawtooth');
+        if (bar === 3 && i % 4 === 0) tone(NOTE(r + 24), t, sd * 2, { type: 'sawtooth', vol: 0.06, lp: 2000, bus: musBus });
       },
     },
     happy: {

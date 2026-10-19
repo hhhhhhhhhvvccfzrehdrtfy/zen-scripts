@@ -45,7 +45,7 @@ function drawSaitama(ctx, x, y, s, dir, o = {}) {
   saiLeg(ctx, hx + 5, hy, p.legs[1], false);
   ctx.save();
   leanAbout(ctx, hx, hy, p.lean);
-  saiTorso(ctx, hx, hy);
+  saiTorso(ctx, hx, hy, p.rip);
   ell(ctx, hx + 4, hy - 70, 6.5, 8, 0, COL.skin, 2.6);
   saiHead(ctx, hx + 5, hy - 92, p);
   saiCollar(ctx, hx, hy);
@@ -108,6 +108,9 @@ function saiArm(ctx, x, y, [a1, rel], far, hand) {
   } else if (hand === 'open') {
     seg(ctx, [[-6, 4], [-12, 11]], 5, R, 3);
     ell(ctx, 0, 7, 8.5, 11, 0, R, 3);
+  } else if (hand === 'thumb') {
+    ell(ctx, 0, 6, 10.5, 10.5, 0, R, 3);
+    seg(ctx, [[-6, 2], [-15, -4]], 6, R, 3);
   } else if (hand === 'big') ell(ctx, 0, 7, 14, 14, 0, R, 3.5);
   else ell(ctx, 0, 6, 10.5, 10.5, 0, R, 3);
   ctx.restore();
@@ -126,7 +129,10 @@ function torsoPath(ctx, x, y) {
   ctx.closePath();
 }
 
-function saiTorso(ctx, x, y) {
+// Ragged holes torn in the suit, as [cx, cy, size] in torso space; rip 0..1 opens them in order.
+const SAI_RIPS = [[8, -34, 11], [-8, -18, 9], [12, -16, 7], [-12, -48, 8]];
+
+function saiTorso(ctx, x, y, rip = 0) {
   torsoPath(ctx, x, y);
   ctx.fillStyle = COL.suit;
   ctx.fill();
@@ -145,6 +151,22 @@ function saiTorso(ctx, x, y) {
   ctx.moveTo(x + 2, y - 46);
   ctx.quadraticCurveTo(x + 12, y - 38, x + 22, y - 42);
   strokeNow(ctx, 1.6, COL.suitD);
+  ctx.globalAlpha = 1;
+  SAI_RIPS.forEach(([cx, cy, sz], i) => {
+    const k = clamp(rip * SAI_RIPS.length - i);
+    if (k <= 0) return;
+    const r = sz * k;
+    ctx.beginPath();
+    for (let j = 0; j < 10; j++) {
+      const a = (j / 10) * TAU;
+      const rr2 = r * (j % 2 ? 0.55 : 1) * (0.8 + hash(i * 13 + j) * 0.4);
+      ctx.lineTo(x + cx + Math.cos(a) * rr2, y + cy + Math.sin(a) * rr2 * 0.8);
+    }
+    ctx.closePath();
+    ctx.fillStyle = COL.skin;
+    ctx.fill();
+    strokeNow(ctx, 1.6, COL.ink);
+  });
   ctx.restore();
   torsoPath(ctx, x, y);
   ctx.strokeStyle = COL.ink;
@@ -199,6 +221,9 @@ function saiCape(ctx, x, y, p) {
   const f1 = Math.sin(t * 9) * (2 + w * 7);
   const f2 = Math.sin(t * 9 + 1.2) * (3 + w * 12);
   const f3 = Math.sin(t * 9 + 2.3) * (3 + w * 14);
+  // capeRot swings the whole cape about the collar, for flying straight up or down
+  ctx.save();
+  if (p.capeRot) leanAbout(ctx, x + 6, y - 68, p.capeRot);
   const path = () => {
     ctx.beginPath();
     ctx.moveTo(x + 6, y - 68);
@@ -244,6 +269,7 @@ function saiCape(ctx, x, y, p) {
   ctx.moveTo(x - 16, y - 50);
   ctx.quadraticCurveTo(x - 26 - w * 34, y + 10 + f1, x - 26 - w * 70, y + 70 + f2 * 0.6 - w * 60);
   strokeNow(ctx, 1.8, '#b9b6ab');
+  ctx.restore();
 }
 
 function headPath(ctx) {
@@ -375,6 +401,17 @@ function saiFace(ctx, p) {
       strokeNow(ctx, 1.1, '#a8785a');
       break;
     }
+    case 'puff':
+      // holding his breath: round eyes, cheeks blown out
+      okEyes();
+      brows(-0.6);
+      ell(ctx, 14, 8.5, 10.5, 8.5, 0.1, COL.skin, 1.8);
+      ell(ctx, 14.5, 6.5, 4.5, 2, 0.1, 'rgba(255,160,140,0.75)', 0);
+      ctx.beginPath();
+      ctx.moveTo(17.5, 12);
+      ctx.lineTo(20, 12.5);
+      strokeNow(ctx, 1.8, COL.ink);
+      break;
     case 'happy':
       ctx.beginPath();
       ctx.arc(6, -1.5, 3, Math.PI, TAU);
