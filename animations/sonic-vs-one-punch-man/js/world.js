@@ -178,7 +178,7 @@ function sky(ctx, name, alpha = 1) {
   ctx.save();
   ctx.globalAlpha *= alpha;
   ctx.fillStyle = g;
-  ctx.fillRect(-60, -60, W + 120, H + 120);
+  ctx.fillRect(-1500, -1500, W + 3000, H + 3000);
   ctx.restore();
 }
 
@@ -211,12 +211,12 @@ function stars(ctx, t, alpha = 1) {
 
 function tile(ctx, img, scroll, y, alpha = 1) {
   const w = img.width;
-  let x = -(((scroll % w) + w) % w);
+  let x = -(((scroll % w) + w) % w) - Math.ceil(1000 / w) * w;
   if (alpha < 1) {
     ctx.save();
     ctx.globalAlpha *= alpha;
   }
-  for (; x < W; x += w) ctx.drawImage(img, Math.round(x), Math.round(y));
+  for (; x < W + 1000; x += w) ctx.drawImage(img, Math.round(x), Math.round(y));
   if (alpha < 1) ctx.restore();
 }
 
@@ -227,8 +227,8 @@ function clouds(ctx, sprites, scroll, y, gap, scale = 1, alpha = 1, seed = 1) {
   for (let i = 0; i < sprites.length * 3; i++) {
     const img = sprites[i % sprites.length];
     const base = i * gap + hash(seed + i) * gap * 0.5;
-    const x = ((((base - scroll) % span) + span) % span) - img.width * scale;
-    if (x > W) continue;
+    const x = ((((base - scroll) % span) + span) % span) - img.width * scale - 1000;
+    if (x > W + 1000) continue;
     ctx.drawImage(img, x, y + hash(seed + i * 2) * 40 - img.height * scale, img.width * scale, img.height * scale);
   }
   ctx.restore();

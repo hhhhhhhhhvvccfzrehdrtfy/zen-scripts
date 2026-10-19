@@ -67,14 +67,7 @@ function drawSonic(ctx, x, y, s, dir, o = {}) {
   g.addColorStop(1, pal.BD);
   pal.fill = g;
 
-  let hy;
-  if (p.fig8) hy = -70 - p.hipLift;
-  else if (p.air) hy = -70 - p.hipLift;
-  else {
-    let reach = 0;
-    for (const [a1, rel] of p.legs) reach = Math.max(reach, Math.cos(a1) * SON.thigh + Math.cos(a1 + rel) * SON.shin);
-    hy = -(reach + SON.ankle) - p.hipLift;
-  }
+  const hy = sonicHipY(p);
   const hx = 0;
 
   ctx.save();
@@ -100,6 +93,18 @@ function drawSonic(ctx, x, y, s, dir, o = {}) {
   if (p.carry) p.carry(ctx, hand[0], hand[1]);
   ctx.restore();
   ctx.restore();
+}
+
+// Hip height above the feet. ground 1 plants the feet, 0 hangs the legs free; values between blend.
+function sonicHipY(p) {
+  const hl = p.hipLift || 0;
+  const g = p.ground ?? (p.air ? 0 : 1);
+  const airY = -70 - hl;
+  if (p.fig8 || g <= 0) return airY;
+  let reach = 0;
+  for (const [a1, rel] of p.legs) reach = Math.max(reach, Math.cos(a1) * SON.thigh + Math.cos(a1 + rel) * SON.shin);
+  const gy = -(reach + SON.ankle) - hl;
+  return g >= 1 ? gy : lerp(airY, gy, g);
 }
 
 function sonicTorso(ctx, x, y, pal) {

@@ -1,0 +1,323 @@
+<title>Sonic vs One Punch Man: Round 2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&family=Dela+Gothic+One&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+  /* Layout: one centred screening column; the player is the hero, chapters sit under it like a DVD menu. */
+  :root {
+    --bg: #0e0d16;
+    --panel: #181624;
+    --line: #2c2940;
+    --fg: #f4f1ea;
+    --muted: #a7a1bb;
+    --blue: #3b74ff;
+    --gold: #ffd21f;
+    --red: #ff4848;
+    --display: "Dela Gothic One", "Arial Black", Impact, sans-serif;
+    --body: "Comic Neue", "Comic Sans MS", "Chalkboard SE", "Trebuchet MS", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--body);
+    font-size: 16px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 24px 40px;
+  }
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    gap: 18px;
+  }
+  header {
+    display: grid;
+    gap: 6px;
+  }
+  h1 {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(26px, 5vw, 46px);
+    line-height: 1.05;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+  }
+  h1 .b { color: var(--blue); }
+  h1 .vs { color: var(--red); font-size: 0.7em; vertical-align: 0.12em; padding: 0 0.15em; }
+  h1 .y { color: var(--gold); }
+  h1 .r2 { color: var(--red); white-space: nowrap; }
+  header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 17px;
+    max-width: 65ch;
+  }
+  .stage {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px var(--line), 0 24px 60px -24px rgba(59, 116, 255, 0.35);
+  }
+  .stage:fullscreen {
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: none;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+  .stage:fullscreen canvas {
+    width: min(100vw, 177.78vh);
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(ellipse at center, rgba(14, 13, 22, 0.15), rgba(14, 13, 22, 0.55));
+  }
+  .bigplay, .replay {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 26px 14px 20px;
+    border-radius: 999px;
+    border: 3px solid #17131f;
+    background: var(--gold);
+    color: #17131f;
+    font-family: var(--display);
+    font-size: clamp(16px, 2.6vw, 24px);
+    cursor: pointer;
+    box-shadow: 5px 6px 0 #17131f;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .bigplay:hover, .replay:hover { transform: translate(-1px, -2px); box-shadow: 6px 8px 0 #17131f; }
+  .bigplay:focus-visible, .replay:focus-visible, .ctl:focus-visible, .chapters button:focus-visible, input[type="range"]:focus-visible {
+    outline: 3px solid var(--blue);
+    outline-offset: 3px;
+  }
+  .bigplay svg, .replay svg { width: 26px; height: 26px; }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+  }
+  .ctl {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--fg);
+    cursor: pointer;
+  }
+  .ctl:hover { border-color: var(--blue); }
+  .ctl svg { width: 22px; height: 22px; }
+  .ctl .i-pause, .ctl.is-playing .i-play { display: none; }
+  .ctl.is-playing .i-pause { display: block; }
+  .ctl .i-off, .ctl.muted .i-on { display: none; }
+  .ctl.muted .i-off { display: block; }
+  .time {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    color: var(--muted);
+    min-width: 10ch;
+  }
+  .scrub {
+    position: relative;
+    flex: 1 1 260px;
+    min-width: 0;
+    height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .ticks {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 0;
+    pointer-events: none;
+  }
+  .ticks span {
+    position: absolute;
+    top: -9px;
+    width: 2px;
+    height: 18px;
+    margin-left: -1px;
+    background: var(--line);
+    border-radius: 1px;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--blue) 0, var(--gold) var(--p, 0%), #2a2738 var(--p, 0%));
+    cursor: pointer;
+    margin: 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--fg);
+    border: 3px solid #17131f;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--fg);
+    border: 3px solid #17131f;
+  }
+  .chapters-wrap h2 {
+    margin: 6px 0 10px;
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .chapters {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+    gap: 8px;
+  }
+  .chapters button {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 2.2em 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--fg);
+    font-family: var(--body);
+    font-size: 16px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .chapters button:hover { border-color: var(--blue); }
+  .chapters button.on { border-color: var(--gold); background: #221f14; }
+  .chapters .num { font-family: var(--display); color: var(--gold); font-size: 14px; }
+  .chapters .nm { min-width: 0; overflow-wrap: anywhere; }
+  .chapters .tc { font-family: var(--mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  footer {
+    color: var(--muted);
+    font-size: 14px;
+    display: grid;
+    gap: 6px;
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+  }
+  footer p { margin: 0; max-width: 75ch; }
+  kbd {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 1px 6px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: var(--panel);
+    color: var(--fg);
+  }
+  @media (max-width: 520px) {
+    .time { order: 3; }
+    .scrub { order: 5; flex-basis: 100%; }
+  }
+</style>
+
+<main class="wrap">
+  <header>
+    <h1><span class="b">SONIC</span><span class="vs">VS</span><span class="y">ONE PUNCH MAN</span> <span class="r2">ROUND 2</span></h1>
+    <p>The rematch, and an uninvited guest. A fan-made cartoon in 14 chapters with hand-keyed fights, drawn live in your browser. Running time <span id="dur">6:00</span>. Turn your sound on.</p>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="screen" width="1280" height="720" aria-label="Animated cartoon: Sonic versus Saitama, round 2, with Shadow"></canvas>
+    <div class="overlay" id="bigplay-wrap">
+      <button class="bigplay" id="bigplay" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>
+        Play the cartoon
+      </button>
+    </div>
+    <div class="overlay" id="endcard" hidden>
+      <button class="replay" id="replay" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z" fill="currentColor"/></svg>
+        Watch again
+      </button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="ctl" id="play" type="button" aria-label="Play">
+      <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>
+      <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z" fill="currentColor"/></svg>
+    </button>
+    <span class="time" id="time">0:00 / 0:00</span>
+    <div class="scrub">
+      <input type="range" id="scrub" min="0" max="100" step="0.01" value="0" aria-label="Seek">
+      <div class="ticks" id="ticks"></div>
+    </div>
+    <button class="ctl" id="sound" type="button" aria-label="Mute sound">
+      <svg class="i-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg class="i-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM17 9l5 6M22 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="ctl" id="full" type="button" aria-label="Full screen">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <section class="chapters-wrap">
+    <h2>Chapters</h2>
+    <ol class="chapters" id="chapters"></ol>
+  </section>
+
+  <footer>
+    <p>Keys: <kbd>Space</kbd> play or pause, <kbd>←</kbd> <kbd>→</kbd> skip 5 seconds, <kbd>M</kbd> mute, <kbd>F</kbd> full screen.</p>
+    <p>Fan-made parody, drawn from scratch and made for fun. Sonic the Hedgehog and Shadow the Hedgehog belong to SEGA. One-Punch Man belongs to ONE and Yusuke Murata. Not affiliated with or endorsed by either.</p>
+  </footer>
+</main>
+
+<script src="js/core.js"></script>
+<script src="js/actors.js"></script>
+<script src="js/sonic.js"></script>
+<script src="js/saitama.js"></script>
+<script src="js/shadow.js"></script>
+<script src="js/world.js"></script>
+<script src="js/world2.js"></script>
+<script src="js/fight.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/scenes-r2-a.js"></script>
+<script src="js/scenes-r2-b.js"></script>
+<script src="js/player.js"></script>

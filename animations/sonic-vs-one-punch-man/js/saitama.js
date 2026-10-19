@@ -34,13 +34,7 @@ function drawSaitama(ctx, x, y, s, dir, o = {}) {
   ctx.translate(x, y);
   ctx.scale(s * dir, s);
   if (p.rot) ctx.rotate(p.rot);
-  let hy;
-  if (p.air) hy = -112 - p.hipLift;
-  else {
-    let reach = 0;
-    for (const [a1, rel] of p.legs) reach = Math.max(reach, Math.cos(a1) * SAI.thigh + Math.cos(a1 + rel) * SAI.shin);
-    hy = -(reach + SAI.foot) - p.hipLift;
-  }
+  const hy = saiHipY(p);
   const hx = 0;
   ctx.save();
   leanAbout(ctx, hx, hy, p.lean);
@@ -59,6 +53,18 @@ function drawSaitama(ctx, x, y, s, dir, o = {}) {
   if (p.carry) p.carry(ctx, hand[0], hand[1]);
   ctx.restore();
   ctx.restore();
+}
+
+// Hip height above the feet; same ground blend as Sonic's.
+function saiHipY(p) {
+  const hl = p.hipLift || 0;
+  const g = p.ground ?? (p.air ? 0 : 1);
+  const airY = -112 - hl;
+  if (g <= 0) return airY;
+  let reach = 0;
+  for (const [a1, rel] of p.legs) reach = Math.max(reach, Math.cos(a1) * SAI.thigh + Math.cos(a1 + rel) * SAI.shin);
+  const gy = -(reach + SAI.foot) - hl;
+  return g >= 1 ? gy : lerp(airY, gy, g);
 }
 
 function saiLeg(ctx, x, y, [a1, rel], far) {
@@ -197,8 +203,21 @@ function saiCape(ctx, x, y, p) {
     ctx.beginPath();
     ctx.moveTo(x + 6, y - 68);
     ctx.quadraticCurveTo(x - 10, y - 72, x - 22, y - 60);
-    ctx.quadraticCurveTo(x - 32 - w * 40, y - 6 + f1, x - 38 - w * 100, y + 60 + f2 - w * 66);
-    ctx.quadraticCurveTo(x - 22 - w * 76, y + 98 + f3 - w * 70, x + 2 - w * 48, y + 90 - w * 58);
+    if (p.torn) {
+      // shredded by an explosion: shorter, with a ragged hem
+      const bx = x - 34 - w * 90;
+      const by = y + 30 + f2 - w * 60;
+      const fx = x + 2 - w * 44;
+      const fy = y + 46 - w * 50;
+      ctx.quadraticCurveTo(x - 30 - w * 40, y - 10 + f1, bx, by);
+      for (let i = 1; i <= 7; i++) {
+        const u = i / 7;
+        ctx.lineTo(lerp(bx, fx, u), lerp(by, fy, u) + (i % 2 ? 16 : -6) + Math.sin(i * 1.7) * 4);
+      }
+    } else {
+      ctx.quadraticCurveTo(x - 32 - w * 40, y - 6 + f1, x - 38 - w * 100, y + 60 + f2 - w * 66);
+      ctx.quadraticCurveTo(x - 22 - w * 76, y + 98 + f3 - w * 70, x + 2 - w * 48, y + 90 - w * 58);
+    }
     ctx.quadraticCurveTo(x + 8, y + 10, x + 6, y - 68);
     ctx.closePath();
   };

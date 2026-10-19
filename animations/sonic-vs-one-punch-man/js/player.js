@@ -8,7 +8,8 @@
     acc += s.dur;
   }
   const TOTAL = acc;
-  const POSTER = 9;
+  const posterScene = SCENES.find((s) => s.poster != null);
+  const POSTER = posterScene ? posterScene.start + posterScene.poster : 9;
 
   const CUES = [];
   const MUSIC = [];
@@ -229,6 +230,7 @@
 
   function boot(data) {
     buildWorld();
+    if (typeof buildWorld2 === 'function') buildWorld2();
     resize();
     if (data && data.t > 0) seek(data.t);
     $('dur').textContent = fmt(TOTAL);

@@ -155,6 +155,37 @@ const Sound = (() => {
       tone(73.4, t, 2.4, { vol: 0.4 });
     },
     boing: (t) => tone(200, t, 0.35, { f1: 520, type: 'square', vol: 0.06, lp: 2000 }),
+    miss: (t) => hiss(t, 0.18, { f0: 1800, f1: 600, q: 2.5, vol: 0.22, attack: 0.03 }),
+    spear: (t) => {
+      tone(1400, t, 0.35, { f1: 300, type: 'sawtooth', vol: 0.07, lp: 5000 });
+      hiss(t, 0.3, { type: 'highpass', f0: 4000, f1: 1500, vol: 0.12 });
+    },
+    chaos: (t) => {
+      tone(220, t, 1.6, { f1: 1760, type: 'sine', vol: 0.2 });
+      tone(330, t + 0.05, 1.6, { f1: 2640, type: 'triangle', vol: 0.08 });
+      hiss(t, 1.4, { f0: 6000, f1: 300, q: 1.5, vol: 0.2, attack: 0.05 });
+    },
+    unfreeze: (t) => {
+      tone(1760, t, 0.9, { f1: 220, type: 'sine', vol: 0.18 });
+      hiss(t, 0.8, { f0: 300, f1: 6000, q: 1.2, vol: 0.18, attack: 0.3 });
+    },
+    clink: (t) => {
+      tone(2637, t, 0.25, { vol: 0.12, type: 'triangle' });
+      tone(3520, t + 0.03, 0.3, { vol: 0.08 });
+    },
+    snap: (t) => {
+      hiss(t, 0.06, { type: 'highpass', f0: 2500, vol: 0.45 });
+      tone(500, t, 0.08, { f1: 120, type: 'square', vol: 0.12, lp: 2500 });
+    },
+    jet: (t) => hiss(t, 0.9, { f0: 500, f1: 1400, q: 0.8, vol: 0.22, attack: 0.1 }),
+    poke: (t) => tone(880, t, 0.12, { f1: 1320, type: 'triangle', vol: 0.18 }),
+    growl: (t) => tone(70, t, 1.1, { f1: 55, type: 'sawtooth', vol: 0.14, lp: 300, sustain: 0.6 }),
+    whirl: (t) => hiss(t, 1.2, { f0: 600, f1: 2200, q: 4, vol: 0.2, attack: 0.2 }),
+    pff: (t) => hiss(t, 0.35, { f0: 900, f1: 400, q: 0.8, vol: 0.25, attack: 0.02 }),
+    charge: (t) => {
+      tone(55, t, 2.6, { f1: 220, type: 'sawtooth', vol: 0.16, lp: 900, sustain: 0.8 });
+      hiss(t, 2.6, { type: 'lowpass', f0: 300, f1: 1800, vol: 0.22, attack: 1.2 });
+    },
   };
 
   function play(name, arg) {
@@ -242,6 +273,22 @@ const Sound = (() => {
         const mel = [12, null, null, 15, null, null, 19, null, 17, null, 15, null, 14, null, null, null];
         const m = mel[i % 16];
         if (m !== null) lead(r + 12 + m, t, sd * 2.5, 0.06, 'sawtooth');
+      },
+    },
+    rival: {
+      bpm: 150,
+      step(i, t, sd) {
+        const bar = Math.floor(i / 16) % 4;
+        const roots = [40, 40, 43, 38];
+        const r = roots[bar];
+        if (i % 2 === 0) bass(r + (i % 16 === 10 ? 3 : 0), t, sd * 1.7, 0.33, 'sawtooth');
+        if (i % 4 === 0) kick(t, 0.6);
+        if (i % 8 === 4) snare(t, 0.34);
+        if (i % 2) hat(t, 0.06);
+        const riff = [0, null, 3, null, 5, 6, null, 5, 3, null, 0, null, 10, null, 7, null];
+        const m = riff[i % 16];
+        if (m !== null) lead(r + 24 + m, t, sd * 1.3, 0.05, 'sawtooth');
+        if (i % 32 === 0) pad([r + 12, r + 15, r + 19], t, sd * 32, 0.03);
       },
     },
     happy: {
